@@ -1,5 +1,4 @@
-
-import { distanceBetweenPoints, checkAndShowVisualisation, torsoScalingFactor, getLandmarkFromName } from './utils.js';
+import { distanceBetweenPoints, checkAndShowVisualisation, torsoScalingFactor, getLandmarkFromName } from "./utils.js";
 
 var loadedMesh;
 function initializeScene(canvasElement) {
@@ -15,18 +14,29 @@ function initializeScene(canvasElement) {
     // loading the glb file
     BABYLON.SceneLoader.ImportMesh("", "./models/", "liver.glb", scene, function (newMeshes) {
         loadedMesh = newMeshes;
+        console.log(loadedMesh);
         loadedMesh[2].name = "liver";
 
         // remove the default cube
         let defaultCube = scene.getMeshByName("Cube");
-        if(defaultCube){
+        if (defaultCube) {
+            defaultCube.dispose();
+        }
+    });
+
+    BABYLON.SceneLoader.ImportMesh("", "./models/", "skull.glb", scene, function (newMeshes) {
+        loadedMesh = newMeshes;
+        // console.log(loadedMesh);
+        loadedMesh[1].name = "skull";
+
+        let defaultCube = scene.getMeshByName("Cube");
+        if (defaultCube) {
             defaultCube.dispose();
         }
     });
 
     return scene;
 }
-
 
 // function to pause the rotation of the mesh that is caused by the dynamic position change
 function pauseMeshRotation(mesh) {
@@ -45,34 +55,48 @@ function liverPosition(landmarks, videoWidth, videoHeight) {
     const midShoulder = {
         x: (leftShoulder.x + rightShoulder.x) / 2,
         y: (leftShoulder.y + rightShoulder.y) / 2,
-    }
+    };
     const midHip = {
         x: (leftHip.x + rightHip.x) / 2,
         y: (leftHip.y + rightHip.y) / 2,
-    }
+    };
 
     const torsoLength = distanceBetweenPoints(midShoulder, midHip);
     const liverPosition = {
         x: midHip.x,
         y: midHip.y - torsoLength / 2,
-    }
+    };
     return liverPosition;
 }
 
-function showLiver({scene, canvas, video, result, viewport}) {
-    checkAndShowVisualisation({scene, canvas, video, result});
+const skullPosition = (landmarks, videoWidth, videoHeight) => {
+    if (!landmarks || !landmarks.length) {
+        return;
+    }
+
+    const nose = getLandmarkFromName(landmarks, "NOSE", videoWidth, videoHeight);
+
+    const skullCoordinates = {
+        x: nose.x,
+        y: nose.y,
+    };
+    return skullCoordinates;
+};
+
+function showLiver({ scene, canvas, video, result, viewport }) {
+    checkAndShowVisualisation({ scene, canvas, video, result });
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     if (!result || !result.poseLandmarks || !result.poseLandmarks.length) {
         return;
     }
     let liverMesh = scene.getMeshByName("liver");
-    if(!liverMesh){
+    if (!liverMesh) {
         return;
     }
-    
+
     const liverPos = liverPosition(result.poseLandmarks, video.videoWidth, video.videoHeight);
-    
+
     const vector = BABYLON.Vector3.Unproject(
         new BABYLON.Vector3(video.videoWidth - liverPos.x, liverPos.y, 1),
         video.videoWidth,
@@ -98,13 +122,54 @@ function showLiver({scene, canvas, video, result, viewport}) {
 
     //render the scene
     scene.render();
-    
 }
 
-async function initialize(){
+const showSkull = ({ scene, canvas, video, result, viewport }) => {
+    checkAndShowVisualisation({ scene, canvas, video, result });
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    if (!result || !result.poseLandmarks || !result.poseLandmarks.length) {
+        return;
+    }
+    let skullMesh = scene.getMeshByName("skull");
+    if (!skullMesh) {
+        return;
+    }
+
+    const skullPos = skullPosition(result.poseLandmarks, video.videoWidth, video.videoHeight);
+    console.log(skullPos);
+
+    const vector = BABYLON.Vector3.Unproject(
+        new BABYLON.Vector3(video.videoWidth - skullPos.x, skullPos.y, 1),
+        video.videoWidth,
+        video.videoHeight,
+        BABYLON.Matrix.Identity(),
+        viewport.getViewMatrix(),
+        viewport.getProjectionMatrix()
+    );
+
+    // setting position and visibility of the mesh
+    skullMesh.isVisible = true;
+    skullMesh.position.x = vector.x / 100;
+    skullMesh.position.y = vector.y / 100;
+
+    // setting rotation of the mesh
+    pauseMeshRotation(skullMesh);
+    skullMesh.rotation.x = Math.PI / 2;
+    skullMesh.rotation.y = Math.PI / 2;
+
+    // dynamic scaling of the mesh
+    const scale = torsoScalingFactor(result.poseLandmarks, video.videoWidth, video.videoHeight);
+    skullMesh.scaling = new BABYLON.Vector3(scale, scale, scale);
+
+    //render the scene
+    scene.render();
+};
+
+async function initialize() {
     const canvas = document.getElementById("renderCanvas"); // Get the canvas element
-    const video = document.getElementById('input_video');
-    if(!video || !canvas){
+    const video = document.getElementById("input_video");
+    if (!video || !canvas) {
         // setTimeout(initialize, 1000);
         return;
     }
@@ -112,35 +177,39 @@ async function initialize(){
     // initialize the babylon scene
     const scene = initializeScene(canvas);
     const viewport = scene.activeCamera;
-    viewport.position.z =  -100;
+    viewport.position.z = -100;
 
     // loading and configuring the medipipe pose model
-    const pose = new Pose({locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
-      }});
+    const pose = new Pose({
+        locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`;
+        },
+    });
     pose.setOptions({
         modelComplexity: 1,
         smoothLandmarks: true,
         enableSegmentation: true,
         smoothSegmentation: true,
         minDetectionConfidence: 0.5,
-        minTrackingConfidence: 0.5
+        minTrackingConfidence: 0.5,
     });
 
     // setting the camera and sending the video frame to the pose model
     let camera = new Camera(video, {
-        onFrame: async () =>  await pose.send({ image: video }),
+        onFrame: async () => await pose.send({ image: video }),
         width: window.innerWidth,
         height: window.innerHeight,
-        facingMode: "environment"
+        facingMode: "environment",
     });
     camera.start();
 
-    pose.onResults((result) => showLiver({scene, canvas, video, result, viewport}));
+    pose.onResults((result) => {
+        showLiver({ scene, canvas, video, result, viewport });
+        showSkull({ scene, canvas, video, result, viewport });
+    });
 }
 
 window.onload = initialize;
-
 
 //next steps
 /*
