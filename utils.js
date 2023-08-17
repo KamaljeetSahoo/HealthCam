@@ -8,6 +8,7 @@ function findMidPoint(point1, point2) {
     return {
         x: (point1.x + point2.x) / 2,
         y: (point1.y + point2.y) / 2,
+        z: (point1.z + point2.z) / 2,
     };
 }
 
@@ -41,18 +42,18 @@ function checkAndShowVisualisation({ scene, canvas, video, result }) {
     ctx.restore();
 }
 
-function generateMidPoint(landmarks, POSE_NAME, videoWidth, videoHeight) {
-    return {
-        x:
-            ((landmarks[POSE_INDEX_MAPPER[POSE_NAME][0]].x + landmarks[POSE_INDEX_MAPPER[POSE_NAME][1]].x) *
-                videoWidth) /
-            2,
-        y:
-            ((landmarks[POSE_INDEX_MAPPER[POSE_NAME][0]].y + landmarks[POSE_INDEX_MAPPER[POSE_NAME][1]].y) *
-                videoHeight) /
-            2,
-    };
-}
+// function generateMidPoint(landmarks, POSE_NAME, videoWidth, videoHeight) {
+//     return {
+//         x:
+//             ((landmarks[POSE_INDEX_MAPPER[POSE_NAME][0]].x + landmarks[POSE_INDEX_MAPPER[POSE_NAME][1]].x) *
+//                 videoWidth) /
+//             2,
+//         y:
+//             ((landmarks[POSE_INDEX_MAPPER[POSE_NAME][0]].y + landmarks[POSE_INDEX_MAPPER[POSE_NAME][1]].y) *
+//                 videoHeight) /
+//             2,
+//     };
+// }
 
 function getLandmarkFromName(landmarks, POSE_NAME, videoWidth, videoHeight) {
     return {
@@ -108,12 +109,17 @@ const calculateAngle = (landmark1, landmark2, landmark3) => {
     return (angle * 180) / Math.PI;
 };
 
+const pauseMeshRotation = (mesh) => {
+    mesh.rotationQuaternion = null;
+};
+
 export {
     distanceBetweenPoints,
+    findMidPoint,
     disposeMesh,
     checkAndShowVisualisation,
-    torsoScalingFactor,
-    generateMidPoint,
     getLandmarkFromName,
+    torsoScalingFactor,
     calculateAngle,
+    pauseMeshRotation,
 };

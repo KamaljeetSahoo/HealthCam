@@ -1,9 +1,12 @@
 import {
     distanceBetweenPoints,
+    findMidPoint,
+    disposeMesh,
     checkAndShowVisualisation,
-    torsoScalingFactor,
     getLandmarkFromName,
+    torsoScalingFactor,
     calculateAngle,
+    pauseMeshRotation,
 } from "./utils.js";
 
 var loadedMesh;
@@ -26,7 +29,7 @@ function initializeScene(canvasElement) {
         // remove the default cube
         let defaultCube = scene.getMeshByName("Cube");
         if (defaultCube) {
-            defaultCube.dispose();
+            disposeMesh(defaultCube);
         }
     });
 
@@ -37,7 +40,7 @@ function initializeScene(canvasElement) {
 
         let defaultCube = scene.getMeshByName("Cube");
         if (defaultCube) {
-            defaultCube.dispose();
+            disposeMesh(defaultCube);
         }
     });
 
@@ -48,7 +51,7 @@ function initializeScene(canvasElement) {
 
         let defaultCube = scene.getMeshByName("Cube");
         if (defaultCube) {
-            defaultCube.dispose();
+            disposeMesh(defaultCube);
         }
     });
 
@@ -56,9 +59,6 @@ function initializeScene(canvasElement) {
 }
 
 // function to pause the rotation of the mesh that is caused by the dynamic position change
-function pauseMeshRotation(mesh) {
-    mesh.rotationQuaternion = null;
-}
 
 function liverPosition(landmarks, videoWidth, videoHeight) {
     if (!landmarks || !landmarks.length) {
@@ -69,14 +69,8 @@ function liverPosition(landmarks, videoWidth, videoHeight) {
     const leftHip = getLandmarkFromName(landmarks, "LEFT_HIP", videoWidth, videoHeight);
     const rightHip = getLandmarkFromName(landmarks, "RIGHT_HIP", videoWidth, videoHeight);
 
-    const midShoulder = {
-        x: (leftShoulder.x + rightShoulder.x) / 2,
-        y: (leftShoulder.y + rightShoulder.y) / 2,
-    };
-    const midHip = {
-        x: (leftHip.x + rightHip.x) / 2,
-        y: (leftHip.y + rightHip.y) / 2,
-    };
+    const midShoulder = findMidPoint(leftShoulder, rightShoulder);
+    const midHip = findMidPoint(leftHip, rightHip);
 
     const torsoLength = distanceBetweenPoints(midShoulder, midHip);
     const liverPosition = {
@@ -96,15 +90,8 @@ const skullPosition = (landmarks, videoWidth, videoHeight) => {
     const leftShoulder = getLandmarkFromName(landmarks, "LEFT_SHOULDER", videoWidth, videoHeight);
     const rightShoulder = getLandmarkFromName(landmarks, "RIGHT_SHOULDER", videoWidth, videoHeight);
 
-    const midMouth = {
-        x: (mouthLeft.x + mouthRight.x) / 2,
-        y: (mouthLeft.y + mouthRight.y) / 2,
-    };
-
-    const midShoulder = {
-        x: (leftShoulder.x + rightShoulder.x) / 2,
-        y: (leftShoulder.y + rightShoulder.y) / 2,
-    };
+    const midMouth = findMidPoint(mouthLeft, mouthRight);
+    const midShoulder = findMidPoint(leftShoulder, rightShoulder);
 
     const torsoLength = distanceBetweenPoints(midMouth, midShoulder);
     const skullCoordinates = {
@@ -125,15 +112,8 @@ const ribCagePosition = (landmarks, videoWidth, videoHeight) => {
     const leftHip = getLandmarkFromName(landmarks, "LEFT_HIP", videoWidth, videoHeight);
     const rightHip = getLandmarkFromName(landmarks, "RIGHT_HIP", videoWidth, videoHeight);
 
-    const midShoulder = {
-        x: (leftShoulder.x + rightShoulder.x) / 2,
-        y: (leftShoulder.y + rightShoulder.y) / 2,
-    };
-
-    const midHip = {
-        x: (leftHip.x + rightHip.x) / 2,
-        y: (leftHip.y + rightHip.y) / 2,
-    };
+    const midShoulder = findMidPoint(leftShoulder, rightShoulder);
+    const midHip = findMidPoint(leftHip, rightHip);
 
     const torsoLength = distanceBetweenPoints(midShoulder, midHip);
     const ribCageCoordinates = {
