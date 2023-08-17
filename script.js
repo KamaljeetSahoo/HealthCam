@@ -1,4 +1,10 @@
-import { distanceBetweenPoints, checkAndShowVisualisation, torsoScalingFactor, getLandmarkFromName } from "./utils.js";
+import {
+    distanceBetweenPoints,
+    checkAndShowVisualisation,
+    torsoScalingFactor,
+    getLandmarkFromName,
+    calculateAngle,
+} from "./utils.js";
 
 var loadedMesh;
 function initializeScene(canvasElement) {
@@ -221,7 +227,14 @@ const showSkull = ({ scene, canvas, video, result, viewport }) => {
     // setting rotation of the mesh
     pauseMeshRotation(skullMesh);
     skullMesh.rotation.x = 0;
-    skullMesh.rotation.y = Math.PI;
+    skullMesh.rotation.y =
+        (Math.PI * 3) / 4 +
+        calculateAngle(
+            getLandmarkFromName(result.poseLandmarks, "LEFT_EAR", video.videoWidth, video.videoHeight),
+            getLandmarkFromName(result.poseLandmarks, "NOSE", video.videoWidth, video.videoHeight),
+            getLandmarkFromName(result.poseLandmarks, "RIGHT_EAR", video.videoWidth, video.videoHeight)
+        ) /
+            75;
     skullMesh.rotation.z = 0;
 
     // dynamic scaling of the mesh
